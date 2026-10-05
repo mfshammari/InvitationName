@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>دعوات عرس محمد</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--plum:#4a2c5a;--plum2:#6b4a7c;--ivory:#faf7f2;--ink:#241a2b;--mute:#7a6f84;--line:#e8e0ec;--gold:#c9a227;--ok:#2e7d4f;--bad:#b3261e}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--ivory);color:var(--ink);font-family:"IBM Plex Sans Arabic",system-ui,sans-serif;font-size:16px;line-height:1.5}
+header{background:var(--plum);color:#fff;padding:18px 18px 14px;border-radius:0 0 22px 22px}
+header h1{margin:0;font-size:22px;font-weight:700;letter-spacing:.2px}
+.kp{display:flex;gap:10px;margin-top:12px}
+.k{flex:1;background:rgba(255,255,255,.12);border-radius:12px;padding:8px 10px}
+.k b{display:block;font-size:22px;line-height:1.1}.k span{font-size:12px;opacity:.85}
+main{padding:14px 14px 96px;max-width:640px;margin:0 auto}
+.search{width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:12px;background:#fff;font:inherit;margin-bottom:12px}
+.sec{background:#fff;border:1px solid var(--line);border-radius:14px;margin-bottom:10px;overflow:hidden}
+.sec>summary{list-style:none;display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;font-weight:600}
+.sec>summary::-webkit-details-marker{display:none}
+.sec>summary .num{color:var(--mute);font-weight:500;font-size:13px;width:20px}
+.sec>summary .t{flex:1}
+.pill{background:#f1eaf5;color:var(--plum);border-radius:999px;padding:2px 10px;font-size:13px;font-weight:600;white-space:nowrap}
+.pill small{color:var(--mute);font-weight:500}
+.chev{color:var(--mute);transition:.2s}details[open] .chev{transform:rotate(180deg)}
+.br{background:#f6f1f9;color:var(--plum);font-weight:600;font-size:14px;padding:7px 14px;display:flex;justify-content:space-between;border-top:1px solid var(--line)}
+.row{display:flex;align-items:center;gap:10px;padding:8px 14px;border-top:1px solid #f1ecf4}
+.row .i{color:var(--mute);font-size:12px;width:22px}
+.row .n{flex:1}.row .n small{color:var(--mute);font-size:12px;margin-right:6px}
+.row .c{font-weight:700;color:var(--plum);min-width:22px;text-align:center}
+.row .star{color:var(--gold);font-size:13px}
+.row .e{border:0;background:none;color:var(--mute);font-size:16px;padding:2px 4px;cursor:pointer}
+.fab{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--plum);color:#fff;border:0;border-radius:999px;padding:14px 26px;font:inherit;font-size:16px;font-weight:600;box-shadow:0 8px 24px rgba(74,44,90,.35);cursor:pointer}
+.ov{position:fixed;inset:0;background:rgba(36,26,43,.45);display:none;align-items:flex-end;justify-content:center;z-index:9}
+.ov.on{display:flex}
+.sheet{background:#fff;width:100%;max-width:640px;border-radius:22px 22px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto}
+.sheet h2{margin:0 0 12px;font-size:18px}
+label{display:block;font-size:13px;color:var(--mute);margin:10px 0 4px}
+label b{color:var(--bad)}
+select,input{width:100%;padding:12px 12px;border:1px solid var(--line);border-radius:12px;font:inherit;background:#fff;color:var(--ink)}
+select:invalid{color:var(--mute)}
+.btns{display:flex;gap:10px;margin-top:16px}
+.btn{flex:1;padding:13px;border-radius:12px;border:0;font:inherit;font-weight:600;cursor:pointer}
+.p{background:var(--plum);color:#fff}.g{background:#eee;color:var(--ink)}.d{background:#fdecea;color:var(--bad)}
+.msg{font-size:14px;margin-top:10px;min-height:20px}.msg.ok{color:var(--ok)}.msg.bad{color:var(--bad)}
+.hide{display:none!important}
+.empty{color:var(--mute);font-size:14px;padding:10px 14px;border-top:1px solid #f1ecf4}
+.toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;transition:.3s;pointer-events:none;z-index:20}
+.toast.on{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <h1>دعوات عرس محمد</h1>
+  <div class="kp">
+    <div class="k"><b id="kInv">—</b><span>إجمالي الدعوات</span></div>
+    <div class="k"><b id="kNames">—</b><span>الأسماء</span></div>
+    <div class="k"><b id="kSec">—</b><span>التقسيمات</span></div>
+  </div>
+</header>
+<main>
+  <input class="search" id="q" placeholder="ابحث عن اسم…" autocomplete="off">
+  <div id="list"></div>
+</main>
+<button class="fab" onclick="openAdd()">＋ إضافة اسم</button>
+
+<div class="ov" id="ovAdd" onclick="if(event.target===this)closeAdd()">
+  <form class="sheet" id="fAdd" onsubmit="return submitAdd(event)">
+    <h2>إضافة اسم</h2>
+    <label>التقسيمة <b>*</b></label>
+    <select id="aSec" required onchange="fillBranches('a')">
+      <option value="" disabled selected>اختر التقسيمة…</option>
+    </select>
+    <div id="aBrWrap" class="hide">
+      <label>الفرع <b>*</b></label>
+      <select id="aBr" onchange="void 0"><option value="" disabled selected>اختر الفرع…</option></select>
+    </div>
+    <label>الاسم <b>*</b></label>
+    <input id="aName" required maxlength="80" placeholder="مثال: أم فهد العواد">
+    <label>عدد الدعوات <b>*</b></label>
+    <input id="aCount" type="number" inputmode="numeric" min="1" max="99" value="1" required>
+    <label>من أضاف (اختياري)</label>
+    <input id="aBy" maxlength="40" placeholder="اسمك">
+    <div class="msg" id="aMsg"></div>
+    <div class="btns"><button type="button" class="btn g" onclick="closeAdd()">إلغاء</button><button class="btn p" id="aGo">حفظ</button></div>
+  </form>
+</div>
+
+<div class="ov" id="ovEdit" onclick="if(event.target===this)closeEdit()">
+  <form class="sheet" onsubmit="return submitEdit(event)">
+    <h2>تعديل</h2>
+    <label>التقسيمة</label>
+    <select id="eSec" onchange="fillBranches('e')"></select>
+    <div id="eBrWrap" class="hide"><label>الفرع</label><select id="eBr"></select></div>
+    <label>الاسم</label><input id="eName" maxlength="80">
+    <label>عدد الدعوات</label><input id="eCount" type="number" inputmode="numeric" min="0" max="99">
+    <label>رمز التعديل</label><input id="ePin" type="password" inputmode="numeric" placeholder="الرمز">
+    <div class="msg" id="eMsg"></div>
+    <div class="btns"><button type="button" class="btn d" onclick="delGuest()">حذف</button><button type="button" class="btn g" onclick="closeEdit()">إلغاء</button><button class="btn p">حفظ</button></div>
+  </form>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SECTIONS=[
+ {n:'المحزم المليان'},
+ {n:'المهيني',b:['الرياض','الشرقية','حائل','الحفر']},
+ {n:'القشاعمة',b:['الرواحله','الداغر','النعيم','المغيص','الهرماس','الدعيع','العقبه']},
+ {n:'الرزانا'},{n:'العبيد'},{n:'العلي'},{n:'الخليل'},{n:'الريا'},{n:'الطواله'},{n:'جيران'},{n:'اصدقاء'}
+];
+const AR='٠١٢٣٤٥٦٧٨٩'; const ar=n=>String(n).replace(/\d/g,d=>AR[d]);
+let guests=[], editing=null, pin=sessionStorage.getItem('pin')||'';
+const $=id=>document.getElementById(id);
+
+function opts(sel, arr, ph){ sel.innerHTML=(ph?`<option value="" disabled selected>${ph}</option>`:'')+arr.map(x=>`<option value="${x}">${x}</option>`).join(''); }
+function fillBranches(p){
+  const s=SECTIONS.find(x=>x.n===$(p+'Sec').value); const w=$(p+'BrWrap'), b=$(p+'Br');
+  if(s&&s.b){ w.classList.remove('hide'); opts(b,s.b,'اختر الفرع…'); b.required=true; }
+  else { w.classList.add('hide'); b.innerHTML=''; b.required=false; }
+}
+function toast(t){ const e=$('toast'); e.textContent=t; e.classList.add('on'); setTimeout(()=>e.classList.remove('on'),2200); }
+
+async function load(){
+  const r=await fetch('/api/guests',{cache:'no-store'}); const j=await r.json(); guests=j.guests||[]; render();
+}
+function render(){
+  const q=$('q').value.trim();
+  let inv=0,names=0; const html=[];
+  SECTIONS.forEach((s,i)=>{
+    const gs=guests.filter(g=>g.section===s.n && (!q||g.name.includes(q)));
+    const all=guests.filter(g=>g.section===s.n);
+    const sInv=all.reduce((a,g)=>a+(+g.count||0),0); inv+=sInv; names+=all.length;
+    if(q&&!gs.length) return;
+    let body='';
+    const groups=s.b?[...s.b.map(b=>({b,items:gs.filter(g=>g.branch===b)})),{b:'',items:gs.filter(g=>!s.b.includes(g.branch))}]:[{b:'',items:gs}];
+    groups.forEach(gr=>{
+      if(!gr.items.length && (!gr.b || q)) return;
+      if(gr.b){ const all2=all.filter(g=>g.branch===gr.b); body+=`<div class="br"><span>${gr.b}</span><span>${ar(all2.reduce((a,g)=>a+(+g.count||0),0))} <small style="font-weight:500;opacity:.7">دعوة</small></span></div>`; }
+      if(!gr.items.length){ body+=`<div class="empty">لا يوجد أسماء بعد</div>`; return; }
+      gr.items.forEach((g,k)=>{ body+=`<div class="row"><span class="i">${ar(k+1)}</span><span class="n">${g.name}${g.note?' <span class="star">★</span>':''}${g.by?`<small>(${g.by})</small>`:''}</span><span class="c">${g.count?ar(g.count):'—'}</span><button class="e" onclick="openEdit('${g.id}')" title="تعديل">✎</button></div>`; });
+    });
+    html.push(`<details class="sec" ${q?'open':''}><summary><span class="num">${ar(i+1)}</span><span class="t">${s.n}</span><span class="pill">${ar(sInv)} <small>دعوة · ${ar(all.length)} اسم</small></span><span class="chev">⌄</span></summary>${body}</details>`);
+  });
+  $('list').innerHTML=html.join('');
+  $('kInv').textContent=ar(inv); $('kNames').textContent=ar(names); $('kSec').textContent=ar(SECTIONS.length);
+}
+$('q').addEventListener('input',render);
+
+function openAdd(){ $('fAdd').reset(); $('aBrWrap').classList.add('hide'); $('aBr').required=false; $('aMsg').textContent=''; $('aBy').value=localStorage.getItem('by')||''; $('ovAdd').classList.add('on'); setTimeout(()=>$('aSec').focus(),50); }
+function closeAdd(){ $('ovAdd').classList.remove('on'); }
+async function submitAdd(e){
+  e.preventDefault();
+  const sec=$('aSec').value; if(!sec){ $('aMsg').className='msg bad'; $('aMsg').textContent='لازم تختار التقسيمة أول'; return false; }
+  const s=SECTIONS.find(x=>x.n===sec); if(s.b && !$('aBr').value){ $('aMsg').className='msg bad'; $('aMsg').textContent='اختر الفرع'; return false; }
+  $('aGo').disabled=true; $('aMsg').className='msg'; $('aMsg').textContent='جاري الحفظ…';
+  localStorage.setItem('by',$('aBy').value.trim());
+  try{
+    const r=await fetch('/api/guests',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'add',section:sec,branch:s.b?$('aBr').value:'',name:$('aName').value,count:$('aCount').value,by:$('aBy').value})});
+    const j=await r.json(); if(!r.ok) throw new Error(j.error||'خطأ');
+    guests.push(j.guest); render(); closeAdd(); toast('تمت الإضافة ✓ '+j.guest.name);
+  }catch(err){ $('aMsg').className='msg bad'; $('aMsg').textContent=err.message; }
+  $('aGo').disabled=false; return false;
+}
+function openEdit(id){
+  editing=guests.find(g=>g.id===id); if(!editing) return;
+  opts($('eSec'),SECTIONS.map(s=>s.n)); $('eSec').value=editing.section; fillBranches('e');
+  if(!$('eBrWrap').classList.contains('hide')){ opts($('eBr'),SECTIONS.find(s=>s.n===editing.section).b); $('eBr').value=editing.branch||''; }
+  $('eName').value=editing.name; $('eCount').value=editing.count||0; $('ePin').value=pin; $('eMsg').textContent=''; $('ovEdit').classList.add('on');
+}
+function closeEdit(){ $('ovEdit').classList.remove('on'); editing=null; }
+async function send(body){
+  pin=$('ePin').value; sessionStorage.setItem('pin',pin);
+  const r=await fetch('/api/guests',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...body,id:editing.id,pin})});
+  const j=await r.json(); if(!r.ok) throw new Error(j.error||'خطأ'); return j;
+}
+async function submitEdit(e){
+  e.preventDefault();
+  try{ await send({action:'update',section:$('eSec').value,branch:$('eBr').value||'',name:$('eName').value,count:$('eCount').value,note:editing.note});
+    Object.assign(editing,{section:$('eSec').value,branch:$('eBr').value||'',name:$('eName').value.trim(),count:+$('eCount').value}); render(); closeEdit(); toast('تم التعديل ✓');
+  }catch(err){ $('eMsg').className='msg bad'; $('eMsg').textContent=err.message; }
+  return false;
+}
+async function delGuest(){
+  if(!confirm('حذف '+editing.name+'؟')) return;
+  try{ await send({action:'delete'}); guests=guests.filter(g=>g.id!==editing.id); render(); closeEdit(); toast('تم الحذف'); }
+  catch(err){ $('eMsg').className='msg bad'; $('eMsg').textContent=err.message; }
+}
+opts($('aSec'),SECTIONS.map(s=>s.n),'اختر التقسيمة…');
+load().catch(()=>toast('تعذر التحميل، حدّث الصفحة'));
+</script>
+</body>
+</html>
