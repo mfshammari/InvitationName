@@ -43,7 +43,7 @@ module.exports = async (req, res) => {
     if (req.method === 'GET') {
       const { guests, seeded } = await load();
       if (seeded) await save(guests);
-      return res.status(200).json({ guests, readonly: !HAS_STORE, env: Object.keys(process.env).filter(k => /BLOB|OIDC/.test(k)) });
+      return res.status(200).json({ guests, readonly: !HAS_STORE });
     }
     if (req.method !== 'POST') return res.status(405).end();
     if (!HAS_STORE) return res.status(503).json({ error: 'التخزين غير مفعّل بعد — اربط Blob بالمشروع' });
