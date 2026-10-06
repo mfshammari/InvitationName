@@ -18,6 +18,7 @@ function parseSeed() {
 const seed = parseSeed();
 
 const KEY = 'guests.json';
+const LOG = 'log.json';
 
 const TOKEN = process.env.BLOB_READ_WRITE_TOKEN || Object.entries(process.env).find(([k]) => k.endsWith('BLOB_READ_WRITE_TOKEN'))?.[1];
 const STORE_ID = process.env.BLOB_STORE_ID || Object.entries(process.env).find(([k]) => k.endsWith('BLOB_STORE_ID'))?.[1];
@@ -36,10 +37,24 @@ async function save(guests) {
   });
 }
 const clean = (s) => String(s || '').trim().slice(0, 80);
+async function readLog() {
+  if (!HAS_STORE) return [];
+  const r = await get(LOG, { access: 'private', useCache: false, ...AUTH });
+  if (!r) return [];
+  try { return JSON.parse(await new Response(r.stream).text()); } catch { return []; }
+}
+async function logEvent(ev) {
+  const log = await readLog();
+  log.unshift({ at: new Date().toISOString(), ...ev });
+  await put(LOG, JSON.stringify(log.slice(0, 2000)), { access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json', ...AUTH });
+}
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   try {
+    if (req.method === 'GET' && req.query && req.query.log !== undefined) {
+      return res.status(200).json({ log: await readLog() });
+    }
     if (req.method === 'GET') {
       const { guests, seeded } = await load();
       if (seeded) await save(guests);
@@ -60,17 +75,22 @@ module.exports = async (req, res) => {
         section, branch: clean(b.branch), name, count, note: clean(b.note), by: clean(b.by), at: new Date().toISOString() };
       guests.push(g);
       await save(guests);
+      await logEvent({ action: 'add', name: g.name, section: g.section, branch: g.branch, count: g.count, by: g.by });
       return res.status(200).json({ ok: true, guest: g });
     }
     if (b.action === 'update' || b.action === 'delete' || b.action === 'restore') {
       if (!admin) return res.status(403).json({ error: 'الرمز غير صحيح' });
       const i = guests.findIndex((g) => g.id === b.id);
       if (i < 0) return res.status(404).json({ error: 'غير موجود' });
+      const before = guests[i];
       if (b.action === 'delete') guests[i] = { ...guests[i], removed: true };
       else if (b.action === 'restore') { const { removed, ...g } = guests[i]; guests[i] = g; }
       else guests[i] = { ...guests[i], section: clean(b.section) || guests[i].section, branch: clean(b.branch),
         name: clean(b.name) || guests[i].name, count: Math.max(0, Math.min(99, parseInt(b.count, 10) || 0)), note: clean(b.note) };
       await save(guests);
+      const after = guests[i]; const changes = [];
+      if (b.action === 'update') for (const k of ['section', 'branch', 'name', 'count']) if (String(before[k] ?? '') !== String(after[k] ?? '')) changes.push(`${k}: ${before[k] ?? '—'} ← ${after[k] ?? '—'}`);
+      await logEvent({ action: b.action, name: after.name, section: after.section, branch: after.branch, count: after.count, by: clean(b.by), changes });
       return res.status(200).json({ ok: true });
     }
     return res.status(400).json({ error: 'bad action' });

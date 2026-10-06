@@ -12,6 +12,10 @@
 body{margin:0;background:var(--ivory);color:var(--ink);font-family:"IBM Plex Sans Arabic",system-ui,sans-serif;font-size:16px;line-height:1.5}
 header{background:var(--plum);color:#fff;padding:18px 18px 14px;border-radius:0 0 22px 22px}
 header h1{margin:0;font-size:22px;font-weight:700;letter-spacing:.2px}
+.hb{display:flex;justify-content:space-between;align-items:center}
+.lg{background:rgba(255,255,255,.15);color:#fff;border:0;border-radius:999px;padding:6px 14px;font:inherit;font-size:13px;cursor:pointer}
+.ev{padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}.ev .t{color:var(--mute);font-size:12px}.ev b{color:var(--plum)}.ev .ch{color:var(--mute);font-size:12px;display:block}
+.tag{display:inline-block;border-radius:6px;padding:0 7px;font-size:12px;margin-left:6px}.tag.add{background:#e6f4ea;color:var(--ok)}.tag.delete{background:#fdecea;color:var(--bad)}.tag.update{background:#eef2fb;color:#2d4fa3}.tag.restore{background:#fff6dd;color:#8a6a00}
 .kp{display:flex;gap:10px;margin-top:12px}
 .k{flex:1;background:rgba(255,255,255,.12);border-radius:12px;padding:8px 10px}
 .k b{display:block;font-size:22px;line-height:1.1}.k span{font-size:12px;opacity:.85}
@@ -54,7 +58,7 @@ select:invalid{color:var(--mute)}
 </head>
 <body>
 <header>
-  <h1>دعوات عرس محمد</h1>
+  <div class="hb"><h1>دعوات عرس محمد</h1><button class="lg" onclick="openLog()">السجل</button></div>
   <div class="kp">
     <div class="k"><b id="kInv">—</b><span>إجمالي الدعوات</span></div>
     <div class="k"><b id="kNames">—</b><span>الأسماء</span></div>
@@ -101,6 +105,10 @@ select:invalid{color:var(--mute)}
     <div class="msg" id="eMsg"></div>
     <div class="btns"><button type="button" class="btn d" id="eDel" onclick="delGuest()">شطب</button><button type="button" class="btn g" onclick="closeEdit()">إلغاء</button><button class="btn p">حفظ</button></div>
   </form>
+</div>
+<div class="ov" id="ovLog" onclick="if(event.target===this)closeLog()">
+  <div class="sheet"><h2>سجل التغييرات</h2><div id="logBody">جاري التحميل…</div>
+  <div class="btns"><button type="button" class="btn g" onclick="closeLog()">إغلاق</button></div></div>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -173,7 +181,7 @@ function openEdit(id){
 function closeEdit(){ $('ovEdit').classList.remove('on'); editing=null; }
 async function send(body){
   pin=$('ePin').value; sessionStorage.setItem('pin',pin);
-  const r=await fetch('/api/guests',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...body,id:editing.id,pin})});
+  const r=await fetch('/api/guests',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...body,id:editing.id,pin,by:localStorage.getItem('by')||''})});
   const j=await r.json(); if(!r.ok) throw new Error(j.error||'خطأ'); return j;
 }
 async function submitEdit(e){
@@ -189,6 +197,18 @@ async function delGuest(){
   try{ await send({action:restore?'restore':'delete'}); if(restore) delete editing.removed; else editing.removed=true; render(); closeEdit(); toast(restore?'تم الاسترجاع':'تم الشطب'); }
   catch(err){ $('eMsg').className='msg bad'; $('eMsg').textContent=err.message; }
 }
+const LBL={add:'إضافة',delete:'شطب',update:'تعديل',restore:'استرجاع'};
+const K={section:'التقسيمة',branch:'الفرع',name:'الاسم',count:'عدد الدعوات'};
+async function openLog(){
+  $('ovLog').classList.add('on'); $('logBody').textContent='جاري التحميل…';
+  try{ const r=await fetch('/api/guests?log=1',{cache:'no-store'}); const j=await r.json(); const log=j.log||[];
+    if(!log.length){ $('logBody').innerHTML='<div class="empty">لا يوجد تغييرات بعد</div>'; return; }
+    $('logBody').innerHTML=log.map(e=>{ const d=new Date(e.at); const t=d.toLocaleString('ar-SA',{dateStyle:'short',timeStyle:'short'});
+      const ch=(e.changes||[]).map(c=>{const [k,v]=c.split(': ');return `<span class="ch">${K[k]||k}: ${v}</span>`;}).join('');
+      return `<div class="ev"><span class="tag ${e.action}">${LBL[e.action]||e.action}</span><b>${e.name}</b> — ${e.section}${e.branch?' / '+e.branch:''} (${ar(e.count||0)})${e.by?` <small>بواسطة ${e.by}</small>`:''}${ch}<div class="t">${t}</div></div>`; }).join('');
+  }catch(err){ $('logBody').textContent='تعذر تحميل السجل'; }
+}
+function closeLog(){ $('ovLog').classList.remove('on'); }
 opts($('aSec'),SECTIONS.map(s=>s.n),'اختر التقسيمة…');
 load().catch(()=>toast('تعذر التحميل، حدّث الصفحة'));
 </script>
