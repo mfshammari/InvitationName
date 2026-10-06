@@ -123,7 +123,7 @@ function fillBranches(p){
 function toast(t){ const e=$('toast'); e.textContent=t; e.classList.add('on'); setTimeout(()=>e.classList.remove('on'),2200); }
 
 async function load(){
-  const r=await fetch('/api/guests',{cache:'no-store'}); const j=await r.json(); guests=j.guests||[]; render();
+  const r=await fetch('/api/guests',{cache:'no-store'}); const j=await r.json(); guests=j.guests||[]; render(); if(j.readonly) toast('عرض فقط — التخزين غير مربوط بعد');
 }
 function render(){
   const q=$('q').value.trim();

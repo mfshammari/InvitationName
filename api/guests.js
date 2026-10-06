@@ -19,7 +19,9 @@ const seed = parseSeed();
 
 const KEY = 'guests.json';
 
+const HAS_STORE = !!process.env.BLOB_READ_WRITE_TOKEN;
 async function load() {
+  if (!HAS_STORE) return { guests: seed, seeded: false };
   const { blobs } = await list({ prefix: KEY, limit: 1 });
   if (!blobs.length) return { guests: seed, seeded: true };
   const r = await fetch(blobs[0].url + '?t=' + Date.now(), { cache: 'no-store' });
@@ -38,9 +40,10 @@ module.exports = async (req, res) => {
     if (req.method === 'GET') {
       const { guests, seeded } = await load();
       if (seeded) await save(guests);
-      return res.status(200).json({ guests });
+      return res.status(200).json({ guests, readonly: !HAS_STORE });
     }
     if (req.method !== 'POST') return res.status(405).end();
+    if (!HAS_STORE) return res.status(503).json({ error: 'التخزين غير مفعّل بعد — اربط Blob بالمشروع' });
     const b = req.body || {};
     let { guests } = await load();
     const admin = b.pin && b.pin === process.env.ADMIN_PIN;
