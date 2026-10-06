@@ -31,6 +31,7 @@ main{padding:14px 14px 96px;max-width:640px;margin:0 auto}
 .row .n{flex:1}.row .n small{color:var(--mute);font-size:12px;margin-right:6px}
 .row .c{font-weight:700;color:var(--plum);min-width:22px;text-align:center}
 .row .star{color:var(--gold);font-size:13px}
+.row.rm .n,.row.rm .c{text-decoration:line-through;color:var(--mute);font-weight:400}
 .row .e{border:0;background:none;color:var(--mute);font-size:16px;padding:2px 4px;cursor:pointer}
 .fab{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--plum);color:#fff;border:0;border-radius:999px;padding:14px 26px;font:inherit;font-size:16px;font-weight:600;box-shadow:0 8px 24px rgba(74,44,90,.35);cursor:pointer}
 .ov{position:fixed;inset:0;background:rgba(36,26,43,.45);display:none;align-items:flex-end;justify-content:center;z-index:9}
@@ -98,7 +99,7 @@ select:invalid{color:var(--mute)}
     <label>عدد الدعوات</label><input id="eCount" type="number" inputmode="numeric" min="0" max="99">
     <label>رمز التعديل</label><input id="ePin" type="password" inputmode="numeric" placeholder="الرمز">
     <div class="msg" id="eMsg"></div>
-    <div class="btns"><button type="button" class="btn d" onclick="delGuest()">حذف</button><button type="button" class="btn g" onclick="closeEdit()">إلغاء</button><button class="btn p">حفظ</button></div>
+    <div class="btns"><button type="button" class="btn d" id="eDel" onclick="delGuest()">شطب</button><button type="button" class="btn g" onclick="closeEdit()">إلغاء</button><button class="btn p">حفظ</button></div>
   </form>
 </div>
 <div class="toast" id="toast"></div>
@@ -131,17 +132,17 @@ function render(){
   SECTIONS.forEach((s,i)=>{
     const gs=guests.filter(g=>g.section===s.n && (!q||g.name.includes(q)));
     const all=guests.filter(g=>g.section===s.n);
-    const sInv=all.reduce((a,g)=>a+(+g.count||0),0); inv+=sInv; names+=all.length;
+    const live=all.filter(g=>!g.removed); const sInv=live.reduce((a,g)=>a+(+g.count||0),0); inv+=sInv; names+=live.length;
     if(q&&!gs.length) return;
     let body='';
     const groups=s.b?[...s.b.map(b=>({b,items:gs.filter(g=>g.branch===b)})),{b:'',items:gs.filter(g=>!s.b.includes(g.branch))}]:[{b:'',items:gs}];
     groups.forEach(gr=>{
       if(!gr.items.length && (!gr.b || q)) return;
-      if(gr.b){ const all2=all.filter(g=>g.branch===gr.b); body+=`<div class="br"><span>${gr.b}</span><span>${ar(all2.reduce((a,g)=>a+(+g.count||0),0))} <small style="font-weight:500;opacity:.7">دعوة</small></span></div>`; }
+      if(gr.b){ const all2=all.filter(g=>g.branch===gr.b&&!g.removed); body+=`<div class="br"><span>${gr.b}</span><span>${ar(all2.reduce((a,g)=>a+(+g.count||0),0))} <small style="font-weight:500;opacity:.7">دعوة</small></span></div>`; }
       if(!gr.items.length){ body+=`<div class="empty">لا يوجد أسماء بعد</div>`; return; }
-      gr.items.forEach((g,k)=>{ body+=`<div class="row"><span class="i">${ar(k+1)}</span><span class="n">${g.name}${g.note?' <span class="star">★</span>':''}${g.by?`<small>(${g.by})</small>`:''}</span><span class="c">${g.count?ar(g.count):'—'}</span><button class="e" onclick="openEdit('${g.id}')" title="تعديل">✎</button></div>`; });
+      gr.items.forEach((g,k)=>{ body+=`<div class="row${g.removed?' rm':''}"><span class="i">${ar(k+1)}</span><span class="n">${g.name}${g.note?' <span class="star">★</span>':''}${g.by?`<small>(${g.by})</small>`:''}</span><span class="c">${g.count?ar(g.count):'—'}</span><button class="e" onclick="openEdit('${g.id}')" title="تعديل">✎</button></div>`; });
     });
-    html.push(`<details class="sec" ${q?'open':''}><summary><span class="num">${ar(i+1)}</span><span class="t">${s.n}</span><span class="pill">${ar(sInv)} <small>دعوة · ${ar(all.length)} اسم</small></span><span class="chev">⌄</span></summary>${body}</details>`);
+    html.push(`<details class="sec" ${q?'open':''}><summary><span class="num">${ar(i+1)}</span><span class="t">${s.n}</span><span class="pill">${ar(sInv)} <small>دعوة · ${ar(live.length)} اسم</small></span><span class="chev">⌄</span></summary>${body}</details>`);
   });
   $('list').innerHTML=html.join('');
   $('kInv').textContent=ar(inv); $('kNames').textContent=ar(names); $('kSec').textContent=ar(SECTIONS.length);
@@ -167,7 +168,7 @@ function openEdit(id){
   editing=guests.find(g=>g.id===id); if(!editing) return;
   opts($('eSec'),SECTIONS.map(s=>s.n)); $('eSec').value=editing.section; fillBranches('e');
   if(!$('eBrWrap').classList.contains('hide')){ opts($('eBr'),SECTIONS.find(s=>s.n===editing.section).b); $('eBr').value=editing.branch||''; }
-  $('eName').value=editing.name; $('eCount').value=editing.count||0; $('ePin').value=pin; $('eMsg').textContent=''; $('ovEdit').classList.add('on');
+  $('eDel').textContent=editing.removed?'استرجاع':'شطب'; $('eName').value=editing.name; $('eCount').value=editing.count||0; $('ePin').value=pin; $('eMsg').textContent=''; $('ovEdit').classList.add('on');
 }
 function closeEdit(){ $('ovEdit').classList.remove('on'); editing=null; }
 async function send(body){
@@ -183,8 +184,9 @@ async function submitEdit(e){
   return false;
 }
 async function delGuest(){
-  if(!confirm('حذف '+editing.name+'؟')) return;
-  try{ await send({action:'delete'}); guests=guests.filter(g=>g.id!==editing.id); render(); closeEdit(); toast('تم الحذف'); }
+  const restore=!!editing.removed;
+  if(!restore && !confirm('شطب '+editing.name+'؟')) return;
+  try{ await send({action:restore?'restore':'delete'}); if(restore) delete editing.removed; else editing.removed=true; render(); closeEdit(); toast(restore?'تم الاسترجاع':'تم الشطب'); }
   catch(err){ $('eMsg').className='msg bad'; $('eMsg').textContent=err.message; }
 }
 opts($('aSec'),SECTIONS.map(s=>s.n),'اختر التقسيمة…');

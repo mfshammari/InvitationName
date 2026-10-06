@@ -62,11 +62,12 @@ module.exports = async (req, res) => {
       await save(guests);
       return res.status(200).json({ ok: true, guest: g });
     }
-    if (b.action === 'update' || b.action === 'delete') {
+    if (b.action === 'update' || b.action === 'delete' || b.action === 'restore') {
       if (!admin) return res.status(403).json({ error: 'الرمز غير صحيح' });
       const i = guests.findIndex((g) => g.id === b.id);
       if (i < 0) return res.status(404).json({ error: 'غير موجود' });
-      if (b.action === 'delete') guests.splice(i, 1);
+      if (b.action === 'delete') guests[i] = { ...guests[i], removed: true };
+      else if (b.action === 'restore') { const { removed, ...g } = guests[i]; guests[i] = g; }
       else guests[i] = { ...guests[i], section: clean(b.section) || guests[i].section, branch: clean(b.branch),
         name: clean(b.name) || guests[i].name, count: Math.max(0, Math.min(99, parseInt(b.count, 10) || 0)), note: clean(b.note) };
       await save(guests);
