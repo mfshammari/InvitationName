@@ -1,1 +1,1 @@
-{"name":"wedding-guests","private":true,"dependencies":{"@vercel/blob":"^1.1.1"}}
+{"name":"wedding-guests","private":true,"dependencies":{"@vercel/blob":"^2.8.1"}}

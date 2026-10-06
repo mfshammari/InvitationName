@@ -1,4 +1,4 @@
-const { put, list } = require('@vercel/blob');
+const { put, get } = require('@vercel/blob');
 const fs = require('fs'), path = require('path');
 const AR = '٠١٢٣٤٥٦٧٨٩';
 function parseSeed() {
@@ -22,14 +22,14 @@ const KEY = 'guests.json';
 const HAS_STORE = !!process.env.BLOB_READ_WRITE_TOKEN;
 async function load() {
   if (!HAS_STORE) return { guests: seed, seeded: false };
-  const { blobs } = await list({ prefix: KEY, limit: 1 });
-  if (!blobs.length) return { guests: seed, seeded: true };
-  const r = await fetch(blobs[0].url + '?t=' + Date.now(), { cache: 'no-store' });
-  return { guests: await r.json(), seeded: false };
+  const res = await get(KEY, { access: 'private', useCache: false });
+  if (!res) return { guests: seed, seeded: true };
+  const txt = await new Response(res.stream).text();
+  return { guests: JSON.parse(txt), seeded: false };
 }
 async function save(guests) {
   await put(KEY, JSON.stringify(guests), {
-    access: 'public', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json',
+    access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json',
   });
 }
 const clean = (s) => String(s || '').trim().slice(0, 80);
