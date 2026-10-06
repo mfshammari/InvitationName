@@ -19,17 +19,20 @@ const seed = parseSeed();
 
 const KEY = 'guests.json';
 
-const HAS_STORE = !!process.env.BLOB_READ_WRITE_TOKEN;
+const TOKEN = process.env.BLOB_READ_WRITE_TOKEN || Object.entries(process.env).find(([k]) => k.endsWith('BLOB_READ_WRITE_TOKEN'))?.[1];
+const STORE_ID = process.env.BLOB_STORE_ID || Object.entries(process.env).find(([k]) => k.endsWith('BLOB_STORE_ID'))?.[1];
+const HAS_STORE = !!(TOKEN || STORE_ID);
+const AUTH = TOKEN ? { token: TOKEN } : (STORE_ID ? { storeId: STORE_ID } : {});
 async function load() {
   if (!HAS_STORE) return { guests: seed, seeded: false };
-  const res = await get(KEY, { access: 'private', useCache: false });
+  const res = await get(KEY, { access: 'private', useCache: false, ...AUTH });
   if (!res) return { guests: seed, seeded: true };
   const txt = await new Response(res.stream).text();
   return { guests: JSON.parse(txt), seeded: false };
 }
 async function save(guests) {
   await put(KEY, JSON.stringify(guests), {
-    access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json',
+    access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json', ...AUTH,
   });
 }
 const clean = (s) => String(s || '').trim().slice(0, 80);
@@ -40,7 +43,7 @@ module.exports = async (req, res) => {
     if (req.method === 'GET') {
       const { guests, seeded } = await load();
       if (seeded) await save(guests);
-      return res.status(200).json({ guests, readonly: !HAS_STORE });
+      return res.status(200).json({ guests, readonly: !HAS_STORE, env: Object.keys(process.env).filter(k => /BLOB|OIDC/.test(k)) });
     }
     if (req.method !== 'POST') return res.status(405).end();
     if (!HAS_STORE) return res.status(503).json({ error: 'التخزين غير مفعّل بعد — اربط Blob بالمشروع' });
