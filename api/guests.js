@@ -39,7 +39,7 @@ async function save(guests) {
 const clean = (s) => String(s || '').trim().slice(0, 80);
 const cleanPhone = (s) => { let p = String(s || '').replace(/[^\d+]/g, ''); if (p.startsWith('+966')) p = '0' + p.slice(4); else if (p.startsWith('966')) p = '0' + p.slice(3); else if (/^5\d{8}$/.test(p)) p = '0' + p; return p.slice(0, 15); };
 const norm = (s) => String(s || '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/[\u064B-\u0652]/g, '').replace(/\s+/g, ' ').trim();
-function loadOps() { try { return JSON.parse(fs.readFileSync(path.join(__dirname, '../data/phones.json'), 'utf8')); } catch { return []; } }
+function loadOps() { try { return require('../data/phones.js'); } catch { return []; } }
 async function readLog() {
   if (!HAS_STORE) return [];
   const r = await get(LOG, { access: 'private', useCache: false, ...AUTH });
