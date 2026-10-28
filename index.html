@@ -16,9 +16,9 @@ header h1{margin:0;font-size:22px;font-weight:700;letter-spacing:.2px}
 .lg{background:rgba(255,255,255,.15);color:#fff;border:0;border-radius:999px;padding:6px 14px;font:inherit;font-size:13px;cursor:pointer}
 .ev{padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}.ev .t{color:var(--mute);font-size:12px}.ev b{color:var(--plum)}.ev .ch{color:var(--mute);font-size:12px;display:block}
 .tag{display:inline-block;border-radius:6px;padding:0 7px;font-size:12px;margin-left:6px}.tag.add{background:#e6f4ea;color:var(--ok)}.tag.delete{background:#fdecea;color:var(--bad)}.tag.update{background:#eef2fb;color:#2d4fa3}.tag.restore{background:#fff6dd;color:#8a6a00}.tag.import{background:#e8f0ff;color:#1f4fa0}
-.kp{display:flex;gap:10px;margin-top:12px}
+.kp{display:flex;gap:8px;margin-top:12px}
 .k{flex:1;background:rgba(255,255,255,.12);border-radius:12px;padding:8px 10px}
-.k b{display:block;font-size:22px;line-height:1.1}.k span{font-size:12px;opacity:.85}
+.k b{display:block;font-size:22px;line-height:1.1}.k span{font-size:12px;opacity:.85}.k.kc{cursor:pointer}.k.on{background:rgba(255,255,255,.3);outline:1px solid rgba(255,255,255,.6)}
 main{padding:14px 14px 96px;max-width:640px;margin:0 auto}
 .search{width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:12px;background:#fff;font:inherit;margin-bottom:12px}
 .sec{background:#fff;border:1px solid var(--line);border-radius:14px;margin-bottom:10px;overflow:hidden}
@@ -65,7 +65,8 @@ select:invalid{color:var(--mute)}
   <div class="kp">
     <div class="k"><b id="kInv">—</b><span>إجمالي الدعوات</span></div>
     <div class="k"><b id="kNames">—</b><span>الأسماء</span></div>
-    <div class="k"><b id="kPh">—</b><span>فيه رقم</span></div>
+    <div class="k kc" onclick="setF('yes')"><b id="kPh">—</b><span>فيه رقم</span></div>
+    <div class="k kc" onclick="setF('no')"><b id="kNo">—</b><span>بدون رقم</span></div>
   </div>
 </header>
 <main>
@@ -129,7 +130,7 @@ const SECTIONS=[
 ];
 const AR='٠١٢٣٤٥٦٧٨٩'; const ar=n=>String(n).replace(/\d/g,d=>AR[d]);
 let guests=[], editing=null, pin=sessionStorage.getItem('pin')||'', F='all';
-function setF(f){ F=f; document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c.dataset.f===f)); render(); }
+function setF(f){ F=(F===f&&f!=='all')?'all':f; document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c.dataset.f===f)); render(); }
 const matchF=g=>F==='all'||(F==='yes'?!!g.phone:!g.phone);
 const $=id=>document.getElementById(id);
 
@@ -163,7 +164,7 @@ function render(){
     html.push(`<details class="sec" ${(q||F!=='all')?'open':''}><summary><span class="num">${ar(i+1)}</span><span class="t">${s.n}</span><span class="pill">${ar(sInv)} <small>دعوة · ${ar(live.length)} اسم</small></span><span class="chev">⌄</span></summary>${body}</details>`);
   });
   $('list').innerHTML=html.join('');
-  $('kInv').textContent=ar(inv); $('kNames').textContent=ar(names); $('kPh').textContent=ar(phs);
+  $('kInv').textContent=ar(inv); $('kNames').textContent=ar(names); $('kPh').textContent=ar(phs); $('kNo').textContent=ar(names-phs); document.querySelectorAll('.k.kc').forEach((k,i)=>k.classList.toggle('on',F===(i?'no':'yes')));
 }
 $('q').addEventListener('input',render);
 
