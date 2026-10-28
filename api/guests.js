@@ -37,6 +37,9 @@ async function save(guests) {
   });
 }
 const clean = (s) => String(s || '').trim().slice(0, 80);
+const cleanPhone = (s) => { let p = String(s || '').replace(/[^\d+]/g, ''); if (p.startsWith('+966')) p = '0' + p.slice(4); else if (p.startsWith('966')) p = '0' + p.slice(3); else if (/^5\d{8}$/.test(p)) p = '0' + p; return p.slice(0, 15); };
+const norm = (s) => String(s || '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/[\u064B-\u0652]/g, '').replace(/\s+/g, ' ').trim();
+function loadOps() { try { return JSON.parse(fs.readFileSync(path.join(__dirname, '../data/phones.json'), 'utf8')); } catch { return []; } }
 async function readLog() {
   if (!HAS_STORE) return [];
   const r = await get(LOG, { access: 'private', useCache: false, ...AUTH });
@@ -72,7 +75,7 @@ module.exports = async (req, res) => {
       if (!section) return res.status(400).json({ error: 'اختر التقسيمة' });
       if (!name) return res.status(400).json({ error: 'اكتب الاسم' });
       const g = { id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-        section, branch: clean(b.branch), name, count, note: clean(b.note), by: clean(b.by), at: new Date().toISOString() };
+        section, branch: clean(b.branch), name, count, note: clean(b.note), phone: cleanPhone(b.phone), by: clean(b.by), at: new Date().toISOString() };
       guests.push(g);
       await save(guests);
       await logEvent({ action: 'add', name: g.name, section: g.section, branch: g.branch, count: g.count, by: g.by });
@@ -86,12 +89,35 @@ module.exports = async (req, res) => {
       if (b.action === 'delete') guests[i] = { ...guests[i], removed: true };
       else if (b.action === 'restore') { const { removed, ...g } = guests[i]; guests[i] = g; }
       else guests[i] = { ...guests[i], section: clean(b.section) || guests[i].section, branch: clean(b.branch),
-        name: clean(b.name) || guests[i].name, count: Math.max(0, Math.min(99, parseInt(b.count, 10) || 0)), note: clean(b.note) };
+        name: clean(b.name) || guests[i].name, count: Math.max(0, Math.min(99, parseInt(b.count, 10) || 0)), note: clean(b.note), phone: b.phone === undefined ? guests[i].phone : cleanPhone(b.phone) };
       await save(guests);
       const after = guests[i]; const changes = [];
-      if (b.action === 'update') for (const k of ['section', 'branch', 'name', 'count']) if (String(before[k] ?? '') !== String(after[k] ?? '')) changes.push(`${k}: ${before[k] ?? '—'} ← ${after[k] ?? '—'}`);
+      if (b.action === 'update') for (const k of ['section', 'branch', 'name', 'count', 'phone']) if (String(before[k] ?? '') !== String(after[k] ?? '')) changes.push(`${k}: ${before[k] ?? '—'} ← ${after[k] ?? '—'}`);
       await logEvent({ action: b.action, name: after.name, section: after.section, branch: after.branch, count: after.count, by: clean(b.by), changes });
       return res.status(200).json({ ok: true });
+    }
+    if (b.action === 'import') {
+      if (!admin) return res.status(403).json({ error: 'الرمز غير صحيح' });
+      const ops = loadOps(); const out = { phones: 0, renamed: 0, added: 0, skipped: 0, missing: [] };
+      for (const op of ops) {
+        if (op.add) {
+          const dup = guests.find((g) => norm(g.name) === norm(op.name) && g.section === op.section);
+          if (dup) { if (op.phone && !dup.phone) { dup.phone = op.phone; out.phones++; } else out.skipped++; continue; }
+          guests.push({ id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), section: op.section, branch: op.branch || '',
+            name: op.name, count: op.count || 1, note: '', phone: op.phone || '', by: 'استيراد', at: new Date().toISOString() });
+          out.added++; continue;
+        }
+        const g = guests.find((x) => !x.removed && x.section === op.section && (!op.branch || (x.branch || '') === op.branch) && norm(x.name) === norm(op.match))
+               || guests.find((x) => !x.removed && norm(x.name) === norm(op.rename || op.match));
+        if (!g) { out.missing.push(op.match); continue; }
+        let ch = false;
+        if (op.rename && g.name !== op.rename) { g.name = op.rename; out.renamed++; ch = true; }
+        if (op.phone && g.phone !== op.phone) { g.phone = op.phone; out.phones++; ch = true; }
+        if (!ch) out.skipped++;
+      }
+      await save(guests);
+      await logEvent({ action: 'import', name: `استيراد الأرقام: ${out.phones} رقم، ${out.renamed} تعديل اسم، ${out.added} إضافة`, section: '', branch: '', count: 0, by: clean(b.by) });
+      return res.status(200).json({ ok: true, ...out });
     }
     return res.status(400).json({ error: 'bad action' });
   } catch (e) {
