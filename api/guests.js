@@ -55,6 +55,17 @@ async function logEvent(ev) {
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   try {
+    if (req.method === 'GET' && req.query && req.query.stats !== undefined) {
+      const { guests } = await load();
+      const live = guests.filter(g => !g.removed);
+      const by = {};
+      for (const g of live) {
+        const k = g.section; by[k] = by[k] || { inv: 0, names: 0, phones: 0, branches: {} };
+        by[k].inv += (+g.count || 0); by[k].names++; if (g.phone) by[k].phones++;
+        if (g.branch) { const b = by[k].branches[g.branch] = by[k].branches[g.branch] || { inv: 0, names: 0 }; b.inv += (+g.count || 0); b.names++; }
+      }
+      return res.status(200).json({ sections: by, total: { inv: live.reduce((a, g) => a + (+g.count || 0), 0), names: live.length, removed: guests.length - live.length, phones: live.filter(g => g.phone).length } });
+    }
     if (req.method === 'GET' && req.query && req.query.log !== undefined) {
       return res.status(200).json({ log: await readLog() });
     }
