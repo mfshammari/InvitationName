@@ -28,6 +28,7 @@ main{padding:14px 14px 96px;max-width:640px;margin:0 auto}
 .sec>summary .t{flex:1}
 .pill{background:#f1eaf5;color:var(--plum);border-radius:999px;padding:2px 10px;font-size:13px;font-weight:600;white-space:nowrap}
 .pill small{color:var(--mute);font-weight:500}
+.chip.rmc{color:var(--bad)} .chip.rmc.on{background:var(--bad);color:#fff} .chip.rmc b{font-weight:600}
 .chev{color:var(--mute);transition:.2s}details[open] .chev{transform:rotate(180deg)}
 .br{background:#f6f1f9;color:var(--plum);font-weight:600;font-size:14px;padding:7px 14px;display:flex;justify-content:space-between;border-top:1px solid var(--line)}
 .row{display:flex;align-items:center;gap:10px;padding:8px 14px;border-top:1px solid #f1ecf4}
@@ -71,7 +72,7 @@ select:invalid{color:var(--mute)}
 </header>
 <main>
   <input class="search" id="q" placeholder="ابحث عن اسم أو رقم…" autocomplete="off">
-  <div class="chips"><button class="chip on" data-f="all" onclick="setF('all')">الكل</button><button class="chip" data-f="yes" onclick="setF('yes')">فيه رقم</button><button class="chip" data-f="no" onclick="setF('no')">بدون رقم</button></div>
+  <div class="chips"><button class="chip on" data-f="all" onclick="setF('all')">الكل</button><button class="chip" data-f="yes" onclick="setF('yes')">فيه رقم</button><button class="chip" data-f="no" onclick="setF('no')">بدون رقم</button><button class="chip rmc" data-f="rm" onclick="setF('rm')">المشطوبين <b id="kRm">٠</b></button></div>
   <div id="list"></div>
 </main>
 <button class="fab" onclick="openAdd()">＋ إضافة اسم</button>
@@ -131,7 +132,7 @@ const SECTIONS=[
 const AR='٠١٢٣٤٥٦٧٨٩'; const ar=n=>String(n).replace(/\d/g,d=>AR[d]);
 let guests=[], editing=null, pin=sessionStorage.getItem('pin')||'', F='all';
 function setF(f){ F=(F===f&&f!=='all')?'all':f; document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c.dataset.f===f)); render(); }
-const matchF=g=>F==='all'||(F==='yes'?!!g.phone:!g.phone);
+const matchF=g=>F==='rm'?!!g.removed:(!g.removed&&(F==='all'||(F==='yes'?!!g.phone:!g.phone)));
 const $=id=>document.getElementById(id);
 
 function opts(sel, arr, ph){ sel.innerHTML=(ph?`<option value="" disabled selected>${ph}</option>`:'')+arr.map(x=>`<option value="${x}">${x}</option>`).join(''); }
@@ -147,7 +148,7 @@ async function load(){
 }
 function render(){
   const q=$('q').value.trim();
-  let inv=0,names=0,phs=0; const html=[];
+  let inv=0,names=0,phs=0; const html=[]; const rmN=guests.filter(g=>g.removed).length;
   SECTIONS.forEach((s,i)=>{
     const gs=guests.filter(g=>g.section===s.n && matchF(g) && (!q||g.name.includes(q)||(g.phone||'').includes(q)));
     const all=guests.filter(g=>g.section===s.n);
@@ -164,7 +165,7 @@ function render(){
     html.push(`<details class="sec" ${(q||F!=='all')?'open':''}><summary><span class="num">${ar(i+1)}</span><span class="t">${s.n}</span><span class="pill">${ar(sInv)} <small>دعوة · ${ar(live.length)} اسم</small></span><span class="chev">⌄</span></summary>${body}</details>`);
   });
   $('list').innerHTML=html.join('');
-  $('kInv').textContent=ar(inv); $('kNames').textContent=ar(names); $('kPh').textContent=ar(phs); $('kNo').textContent=ar(names-phs); document.querySelectorAll('.k.kc').forEach((k,i)=>k.classList.toggle('on',F===(i?'no':'yes')));
+  $('kInv').textContent=ar(inv); $('kNames').textContent=ar(names); $('kPh').textContent=ar(phs); $('kNo').textContent=ar(names-phs); $('kRm').textContent=ar(rmN); document.querySelectorAll('.k.kc').forEach((k,i)=>k.classList.toggle('on',F===(i?'no':'yes')));
 }
 $('q').addEventListener('input',render);
 
@@ -174,6 +175,8 @@ async function submitAdd(e){
   e.preventDefault();
   const sec=$('aSec').value; if(!sec){ $('aMsg').className='msg bad'; $('aMsg').textContent='لازم تختار التقسيمة أول'; return false; }
   const s=SECTIONS.find(x=>x.n===sec); if(s.b && !$('aBr').value){ $('aMsg').className='msg bad'; $('aMsg').textContent='اختر الفرع'; return false; }
+  const nm=$('aName').value.trim(); if(/^[\d\s+\-()]+$/.test(nm)||!/[\u0600-\u06FFa-zA-Z]/.test(nm)){ $('aMsg').className='msg bad'; $('aMsg').textContent='اكتب اسم المدعوة — الرقم له خانة مستقلة'; return false; }
+  const ph=($('aPhone')?.value||'').replace(/\D/g,''); if(ph){ const d=guests.find(g=>!g.removed&&(g.phone||'').replace(/\D/g,'').replace(/^966/,'0')===ph.replace(/^966/,'0')); if(d){ $('aMsg').className='msg bad'; $('aMsg').textContent='هذا الرقم مسجّل باسم: '+d.name+' ('+d.section+')'; return false; } }
   $('aGo').disabled=true; $('aMsg').className='msg'; $('aMsg').textContent='جاري الحفظ…';
   localStorage.setItem('by',$('aBy').value.trim());
   try{

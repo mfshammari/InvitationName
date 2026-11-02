@@ -37,6 +37,9 @@ async function save(guests) {
   });
 }
 const clean = (s) => String(s || '').trim().slice(0, 80);
+const isNameLike = (n) => /[\u0600-\u06FFa-zA-Z]/.test(n) && !/^[\d\s+\-()]+$/.test(n);
+const normPhone = (p) => String(p || '').replace(/\D/g, '').replace(/^966/, '0');
+const phoneOwner = (guests, phone, exceptId) => { const n = normPhone(phone); if (!n) return null; return guests.find((g) => g.id !== exceptId && !g.removed && normPhone(g.phone) === n) || null; };
 const cleanPhone = (s) => { let p = String(s || '').replace(/[^\d+]/g, ''); if (p.startsWith('+966')) p = '0' + p.slice(4); else if (p.startsWith('966')) p = '0' + p.slice(3); else if (/^5\d{8}$/.test(p)) p = '0' + p; return p.slice(0, 15); };
 const norm = (s) => String(s || '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/[\u064B-\u0652]/g, '').replace(/\s+/g, ' ').trim();
 function loadOps() { try { return require('../data/phones.js'); } catch { return []; } }
@@ -85,8 +88,12 @@ module.exports = async (req, res) => {
       const count = Math.max(0, Math.min(99, parseInt(b.count, 10) || 0));
       if (!section) return res.status(400).json({ error: 'اختر التقسيمة' });
       if (!name) return res.status(400).json({ error: 'اكتب الاسم' });
+      if (!isNameLike(name)) return res.status(400).json({ error: 'الاسم لا يمكن أن يكون رقماً — اكتب اسم المدعوة وضع الرقم في خانته' });
+      const phone = cleanPhone(b.phone);
+      const owner = phoneOwner(guests, phone);
+      if (owner) return res.status(409).json({ error: `هذا الرقم مسجّل باسم: ${owner.name} (${owner.section}${owner.branch ? ' / ' + owner.branch : ''})` });
       const g = { id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-        section, branch: clean(b.branch), name, count, note: clean(b.note), phone: cleanPhone(b.phone), by: clean(b.by), at: new Date().toISOString() };
+        section, branch: clean(b.branch), name, count, note: clean(b.note), phone, by: clean(b.by), at: new Date().toISOString() };
       guests.push(g);
       await save(guests);
       await logEvent({ action: 'add', name: g.name, section: g.section, branch: g.branch, count: g.count, by: g.by });
@@ -97,6 +104,12 @@ module.exports = async (req, res) => {
       const i = guests.findIndex((g) => g.id === b.id);
       if (i < 0) return res.status(404).json({ error: 'غير موجود' });
       const before = guests[i];
+      if (b.action === 'update') {
+        const nn = clean(b.name) || before.name;
+        if (!isNameLike(nn)) return res.status(400).json({ error: 'الاسم لا يمكن أن يكون رقماً' });
+        if (b.phone !== undefined) { const owner = phoneOwner(guests, cleanPhone(b.phone), before.id); if (owner) return res.status(409).json({ error: `هذا الرقم مسجّل باسم: ${owner.name} (${owner.section})` }); }
+      }
+      if (b.action === 'restore') { const owner = phoneOwner(guests, before.phone, before.id); if (owner) return res.status(409).json({ error: `لا يمكن الاسترجاع: الرقم مسجّل الآن باسم ${owner.name}` }); }
       if (b.action === 'delete') guests[i] = { ...guests[i], removed: true };
       else if (b.action === 'restore') { const { removed, ...g } = guests[i]; guests[i] = g; }
       else guests[i] = { ...guests[i], section: clean(b.section) || guests[i].section, branch: clean(b.branch),
